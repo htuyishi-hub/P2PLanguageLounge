@@ -1,0 +1,30 @@
+name: Purge All APK Artifacts
+
+on:
+  workflow_dispatch:
+
+jobs:
+  purge:
+    name: Purge All APK Artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+
+    steps:
+      - name: Delete all repository artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Scanning for all artifacts in repository..."
+          ARTIFACT_IDS=$(gh api repos/${{ github.repository }}/actions/artifacts --jq '.artifacts[] | .id')
+          if [ -z "$ARTIFACT_IDS" ]; then
+            echo "No artifacts found in this repository."
+          else
+            echo "Found artifacts to delete:"
+            echo "$ARTIFACT_IDS"
+            for ID in $ARTIFACT_IDS; do
+              echo "Deleting artifact $ID..."
+              gh api -X DELETE repos/${{ github.repository }}/actions/artifacts/$ID || true
+            done
+            echo "All artifacts have been purged and storage quota is reclaimed!"
+          fi
